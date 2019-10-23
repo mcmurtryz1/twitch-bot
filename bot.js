@@ -50,7 +50,7 @@ let twitchApi = config.twitchClientId;
 //Are songs enabled
 let songsEnabled = config.songsDefault;
 
-//Is rev live
+//Is channel live
 let isLive = config.isLive;
 
 //Are songs being sent over mqtt
@@ -800,11 +800,11 @@ function distributePoints() {
 
 //Adds points of the given amount to the given user
 function addPoints(amount, viewer) {
-	let sql = `INSERT IGNORE INTO rev_db.users 
+	let sql = `INSERT IGNORE INTO users 
 	SET username = '${viewer}', points = 0;`
 	con.query(sql, function (create_err) {
 		if (create_err) errorQueue.add(err.message);
-		sql = `UPDATE rev_db.users SET points = points + ${amount} WHERE username = '${viewer}' AND EXISTS (SELECT username FROM rev_db.talked WHERE username = '${viewer}');`;
+		sql = `UPDATE users SET points = points + ${amount} WHERE username = '${viewer}' AND EXISTS (SELECT username FROM talked WHERE username = '${viewer}');`;
 		con.query(sql, function (update_err) {
 			if (update_err) errorQueue.add(err.message);
 		});
@@ -813,7 +813,7 @@ function addPoints(amount, viewer) {
 
 //Returns the points a given user has
 function getPoints(viewer, cb) {
-	let sql = `SELECT points FROM rev_db.users WHERE username = '${viewer}';`;
+	let sql = `SELECT points FROM users WHERE username = '${viewer}';`;
 	con.query(sql, function (query_err, result) {
 		if (query_err) errorQueue.add(err.message);
 		cb(result[0]);
@@ -827,11 +827,11 @@ function rollDice(sides) {
 
 //Removes points based on the given amount and the given user
 function removePoints(amount, viewer) {
-	let sql = `INSERT IGNORE INTO rev_db.users 
+	let sql = `INSERT IGNORE INTO users 
 	SET username = '${viewer}', points = 0;`
 	con.query(sql, function (create_err) {
 		if (create_err) errorQueue.add(err.message);
-		sql = `UPDATE rev_db.users SET points = points - ${amount} WHERE username = '${viewer}';`;
+		sql = `UPDATE users SET points = points - ${amount} WHERE username = '${viewer}';`;
 		con.query(sql, function (update_err) {
 			if (update_err) errorQueue.add(err.message);
 		});
@@ -840,7 +840,7 @@ function removePoints(amount, viewer) {
 
 //Returns the person with highest points and how many
 function getLeader(cb) {
-	let sql = `SELECT username, points FROM rev_db.users WHERE points = (SELECT MAX(points) FROM rev_db.users);`;
+	let sql = `SELECT username, points FROM users WHERE points = (SELECT MAX(points) FROM users);`;
 	con.query(sql, function (query_err, result) {
 		if (query_err) errorQueue.add(err.message);
 		cb(result[0]);
@@ -859,7 +859,7 @@ function getFollow(viewer, cb) {
 
 //Puts the given person in the talked table
 function createTalked(viewer) {
-	let sql = `INSERT IGNORE INTO rev_db.talked SET username = '${viewer}';`;
+	let sql = `INSERT IGNORE INTO talked SET username = '${viewer}';`;
 	con.query(sql, function (insert_err) {
 		if (insert_err) errorQueue.add(err.message);
 	});
@@ -868,7 +868,7 @@ function createTalked(viewer) {
 //Inserts a given song into the songs DB if it passes the link criteria and is less than 5 minutes
 //it then tries to autoconfirm the song based on predefined conditions such as views and like ration
 function insertSong(viewer, link, length, cb) {
-	let sql = `SELECT username FROM rev_db.song_requests WHERE username = '${viewer}';`;
+	let sql = `SELECT username FROM song_requests WHERE username = '${viewer}';`;
 	con.query(sql, function (query_user_err, query_user_result) {
 		if (query_user_err) errorQueue.add(err.message);
 		if (query_user_result[0] == undefined) {
@@ -880,7 +880,7 @@ function insertSong(viewer, link, length, cb) {
 					} else if (statistics == 'too long') {
 						cb('too long');
 					} else {
-						sql = "INSERT INTO `rev_db`.`song_requests` (`link`, `username`) VALUES ('" + link + "', '" + viewer + "');";
+						sql = "INSERT INTO song_requests (`link`, `username`) VALUES ('" + link + "', '" + viewer + "');";
 						con.query(sql, function (insert_err) {
 							if (insert_err) errorQueue.add(err.message);
 							else {
@@ -901,7 +901,7 @@ function insertSong(viewer, link, length, cb) {
 
 //Returns the entire queue
 function getQueue(cb) {
-	let sql = `SELECT username, confirmed FROM rev_db.song_requests ORDER BY time;`
+	let sql = `SELECT username, confirmed FROM song_requests ORDER BY time;`
 	con.query(sql, function (query_err, query_result) {
 		if (query_err) errorQueue.add(err.message);
 		cb(query_result);
@@ -910,7 +910,7 @@ function getQueue(cb) {
 
 //Confirms the song of a given user
 function confirmSong(viewer) {
-	let sql = `UPDATE rev_db.song_requests SET confirmed = 1 WHERE username = '${viewer}';`;
+	let sql = `UPDATE song_requests SET confirmed = 1 WHERE username = '${viewer}';`;
 	con.query(sql, function (update_err) {
 		if (update_err) errorQueue.add(err.message);
 	});
@@ -961,12 +961,12 @@ function autoConfirm(viewer, link) {
 
 //Updates the song in the DB for a given user then tries to autoconfirm the new song
 function updateSong(viewer, link, cb) {
-	let sql = `SELECT username FROM rev_db.song_requests WHERE username = '${viewer}'`;
+	let sql = `SELECT username FROM song_requests WHERE username = '${viewer}'`;
 	con.query(sql, function (query_user_err, query_user_result) {
 		if (query_user_err) errorQueue.add(err.message);
 		if (query_user_result[0] != undefined) {
 			if (link.match('youtube.com') || link.match('youtu.be')) {
-				sql = `UPDATE rev_db.song_requests SET confirmed = 0, link = '${link}' WHERE username = '${viewer}');`;
+				sql = `UPDATE song_requests SET confirmed = 0, link = '${link}' WHERE username = '${viewer}');`;
 				con.query(sql, function (update_err) {
 					if (update_err) errorQueue.add(err.message);
 					else {
@@ -985,7 +985,7 @@ function updateSong(viewer, link, cb) {
 
 //Gets the next song in the DB that is confirmed
 function getSong(cb) {
-	let sql = `SELECT link, username FROM rev_db.song_requests WHERE confirmed = 1 ORDER BY time;`;
+	let sql = `SELECT link, username FROM song_requests WHERE confirmed = 1 ORDER BY time;`;
 	con.query(sql, function (query_err, query_result) {
 		if (query_err) errorQueue.add(err.message);
 		cb(query_result[0]);
@@ -994,7 +994,7 @@ function getSong(cb) {
 
 //Removes the song of a given viewer
 function removeSong(viewer) {
-	let sql = `DELETE FROM rev_db.song_requests WHERE username = '${viewer}'`;
+	let sql = `DELETE FROM song_requests WHERE username = '${viewer}'`;
 	con.query(sql, function (delete_err) {
 		if (delete_err) errorQueue.add(err.message);
 	});
@@ -1043,12 +1043,12 @@ function confirmLength(link, length, cb) {
 
 //Sends a song over mqtt
 function sendSong(link) {
-	mqttClient.publish('rev/songs', link);
+	mqttClient.publish(`${channelName}/songs`, link);
 }
 
 //Gets the total bet amounts
 function getBetAmounts(cb) {
-	let sql = 'SELECT SUM(betamount) as total, betnum FROM rev_db.bets GROUP BY betnum;'
+	let sql = 'SELECT SUM(betamount) as total, betnum FROM bets GROUP BY betnum;'
 	con.query(sql, function (err, result) {
 		if (err) errorQueue.add(err.message);
 		else cb(result);
@@ -1057,14 +1057,14 @@ function getBetAmounts(cb) {
 
 //Adds a bet to the DB
 function addBet(viewer, bet, choice, cb) {
-	let sql = `INSERT IGNORE INTO rev_db.bets
+	let sql = `INSERT IGNORE INTO bets
 	SET username = ?, betamount = 0, betnum = ?;`;
 	con.query(sql, [
 		viewer,
 		choice
 	], function (err) {
 		if (err) errorQueue.add(err.message);
-		sql = `UPDATE rev_db.bets SET betamount = betamount + ? WHERE username = ?;`;
+		sql = `UPDATE bets SET betamount = betamount + ? WHERE username = ?;`;
 		con.query(sql, [
 			bet,
 			viewer
@@ -1083,12 +1083,12 @@ function addBet(viewer, bet, choice, cb) {
 
 //Distributes bet winnings
 function distributeWinnings(winning, cb) {
-	let sql = `SELECT SUM(betamount) as total FROM rev_db.bets WHERE betnum <> ?;`;
+	let sql = `SELECT SUM(betamount) as total FROM bets WHERE betnum <> ?;`;
 	con.query(sql, [
 		winning
 	], function (lose_err, lose_result) {
 		if (lose_err) errorQueue.add(err.message);
-		sql = `SELECT betamount, username FROM rev_db.bets WHERE betnum = ?;`;
+		sql = `SELECT betamount, username FROM bets WHERE betnum = ?;`;
 		con.query(sql, [
 			winning
 		], function (win_err, win_result) {
@@ -1110,7 +1110,7 @@ function distributeWinnings(winning, cb) {
 
 //Gets the bet for an individual user
 function individualBet(viewer, cb) {
-	let sql = `SELECT betamount, betnum FROM rev_db.bets WHERE username = ?;`;
+	let sql = `SELECT betamount, betnum FROM bets WHERE username = ?;`;
 	con.query(sql, [
 		viewer
 	], function (err, result) {
@@ -1121,7 +1121,7 @@ function individualBet(viewer, cb) {
 
 //Updates the bet for a given user to a new choice
 function updateBet(viewer, choice) {
-	let sql = `UPDATE rev_db.bets SET betnum = ? WHERE username = ?;`;
+	let sql = `UPDATE bets SET betnum = ? WHERE username = ?;`;
 	con.query(sql, [
 		choice,
 		viewer
@@ -1132,7 +1132,7 @@ function updateBet(viewer, choice) {
 
 //Refunds all bets
 function refundBets(cb) {
-	let sql = `SELECT betamount, username FROM rev_db.bets;`
+	let sql = `SELECT betamount, username FROM bets;`
 	con.query(sql, function (err, result) {
 		if (err) errorQueue.add(err.message);
 		for (bet of result) {
@@ -1144,13 +1144,13 @@ function refundBets(cb) {
 
 //Wipes the bets table
 function wipeBets() {
-	sql = `DELETE FROM rev_db.bets`;
+	sql = `DELETE FROM bets`;
 	con.query(sql, function (err) {
 		if (err) errorQueue.add(err.message);
 	});
 }
 
-//Say a follow message from the json file if rev is live
+//Say a follow message from the json file if channel is live
 function sayFollowMessage() {
 	if (isLive) {
 		let res = rollDice(followMessages.length) - 1;
