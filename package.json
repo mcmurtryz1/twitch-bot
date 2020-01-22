@@ -1,0 +1,27 @@
+{
+  "name": "temptwitchbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcmurtryz1/twitch-bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mcmurtryz1/twitch-bot/issues"
+  },
+  "homepage": "https://github.com/mcmurtryz1/twitch-bot#readme",
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "moment": "^2.24.0",
+    "mqtt": "^3.0.0",
+    "mysql": "^2.18.0",
+    "node-fetch": "^2.6.0",
+    "twitch-bot": "^1.3.5"
+  }
+}

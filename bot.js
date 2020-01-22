@@ -192,7 +192,19 @@ client.on('message', chatter => {
 		}
 	}
 
-	//Echos the bots up time
+	//Allows the bot to timeout a user
+	if (superUsers.includes(username) && commandName.match(/^!attack/g)) {
+		let sep = commandName.split(' ');
+		let user = sep[1];
+		let time = sep[2];
+		if (isNaN(time)) {
+			timeoutUser(user, 0);
+		} else {
+			timeoutUser(user, time);
+		}
+	}
+
+	//Echos the bots uptime
 	else if (superUsers.includes(username) && commandName == '!botUptime') {
 		let today = new Date();
 		client.say(getFormattedTimeBetween(today.getTime() - startTime.getTime()));
@@ -377,6 +389,13 @@ client.on('message', chatter => {
 					client.say(result);
 				});
 			}
+		}
+
+		//Will state the uptime of the channel
+		else if (commandName == "!uptime") {
+			let formattedTime = channelUptime();
+			if (formattedTime != null) client.say(`Channel has been live for ${formattedTime}`);
+			else client.say(`Rev isn't live.`);
 		}
 
 		//Lets users request songs for regularSongRequest points. It makes sure the song is 
@@ -690,7 +709,7 @@ client.on('message', chatter => {
 			}
 		}
 
-		//The message was randoms chatting so "reward" the user
+		//The message was random chatting so "reward" the user
 		else {
 			addPoints(1, username);
 		}
@@ -699,7 +718,7 @@ client.on('message', chatter => {
 	//log the message
 	const today = new Date();
 	const time = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
-	messageQueue.add(`[MESSAGE] ${username} typed '${chatter.message}' at ${time}`);
+	messageQueue.add(`[MESSAGE] ${username} typed '${chatter.message}' at ${time}.`);
 });
 
 //On subscriptions thank the person that subbed
@@ -820,7 +839,7 @@ function getPoints(viewer, cb) {
 	});
 }
 
-//Rolls a dice between 1 and 100
+//Rolls a dice between 1 and sides
 function rollDice(sides) {
 	return Math.floor(Math.random() * sides) + 1;
 }
@@ -1167,6 +1186,22 @@ function searchQuotes(search) {
 		}
 	}
 	return undefined;
+}
+
+//Return stream uptime
+function channelUptime() {
+	let today = new Date();
+	if(streamStart != null) return getFormattedTimeBetween(today.getTime() - streamStart.getTime());
+	else return null;
+}
+
+//Times out the given user for the given time
+function timeoutUser(user, time) {
+	if (time == 0) {
+		client.say(`/ban ${user}`);
+	} else {
+		client.say(`/timeout ${user} ${time}`);
+	}
 }
 
 //Convert an array to a string for writing to a file
