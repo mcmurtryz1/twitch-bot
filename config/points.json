@@ -1,0 +1,7 @@
+{
+    "endStreamThreshold": 100000,
+    "normalWinMultiplier": 2,
+    "jackpotMultiplier": 5,
+    "regularSongRequest": 300,
+    "longSongRequest": 1000
+}
